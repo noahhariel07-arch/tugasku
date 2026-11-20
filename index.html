@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IngatTugas - Web Pengingat Tugas Kuliah & Alarm Otomatis</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header & Navigasi -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>IngatTugas</h1>
+        <span>Web Pengingat Tugas Kuliah & Alarm Otomatis</span>
+      </div>
+    </div>
+
+    <nav class="nav-menu">
+      <button class="nav-btn active" data-target="page-dashboard">Daftar & Pengingat</button>
+      <button class="nav-btn" data-target="page-form">+ Tambah Tugas</button>
+      <button class="nav-btn" data-target="page-database">Arsip & Database</button>
+      <button id="btn-theme" class="btn-outline">Mode Gelap</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- Banner Peringatan Otomatis (Dimanipulasi via DOM) -->
+    <div id="urgent-banner" class="urgent-banner hidden">
+      <div class="banner-content">
+        <div>
+          <strong>PERINGATAN DEADLINE MENDEKATI:</strong>
+          <span id="urgent-message">Ada tugas yang mendekati batas waktu!</span>
+        </div>
+        <button id="btn-notif-urgent-now" class="btn-danger btn-sm">Munculkan Notif di HP</button>
+      </div>
+    </div>
+
+    <!-- Panel Kontrol Notifikasi Langsung ke HP -->
+    <section class="card notif-panel">
+      <div class="notif-panel-flex">
+        <div>
+          <div class="notif-title-row">
+            <h3>Pengaturan Notifikasi & Alarm Langsung HP</h3>
+            <span id="notif-status-badge" class="badge badge-Sedang">Memeriksa Izin...</span>
+          </div>
+          <p class="text-muted">
+            Aktifkan izin notifikasi agar alarm dan peringatan tugas langsung muncul di bilah atas layar HP beserta getaran.
+          </p>
+        </div>
+        <div class="btn-group">
+          <button id="btn-enable-notif" class="btn-success">1. Aktifkan Izin Notif HP</button>
+          <button id="btn-test-notif-now" class="btn-primary">2. Tes Notif & Alarm</button>
+          <button id="btn-test-notif-delay" class="btn-warning">3. Tes Jeda 5 Detik</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ringkasan Statistik (Diperbarui via DOM) -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <p class="stat-label">Tugas Aktif</p>
+        <h2 id="stat-aktif">0</h2>
+      </div>
+      <div class="stat-card danger">
+        <p class="stat-label">Mendesak (< 24 Jam / Lewat)</p>
+        <h2 id="stat-mendesak">0</h2>
+      </div>
+      <div class="stat-card info">
+        <p class="stat-label">Rata-Rata Progres</p>
+        <h2 id="stat-progres">0%</h2>
+      </div>
+      <div class="stat-card success">
+        <p class="stat-label">Tugas Selesai</p>
+        <h2 id="stat-selesai">0</h2>
+      </div>
+    </section>
+
+    <!-- HALAMAN 1: DASHBOARD PENGINGAT & DAFTAR TUGAS -->
+    <section id="page-dashboard" class="page-section active">
+      <div class="card filter-bar">
+        <input type="text" id="search-input" placeholder="Cari judul tugas atau mata kuliah...">
+        <select id="filter-status">
+          <option value="Semua">Semua Status</option>
+          <option value="Belum Dikerjakan">Belum Dikerjakan</option>
+          <option value="Sedang Dikerjakan">Sedang Dikerjakan</option>
+          <option value="Selesai">Selesai</option>
+        </select>
+        <select id="filter-prioritas">
+          <option value="Semua">Semua Prioritas</option>
+          <option value="Tinggi">Prioritas Tinggi</option>
+          <option value="Sedang">Prioritas Sedang</option>
+          <option value="Rendah">Prioritas Rendah</option>
+        </select>
+        <select id="sort-by">
+          <option value="deadline-asc">Urutkan: Deadline Terdekat</option>
+          <option value="priority-desc">Urutkan: Prioritas Tertinggi</option>
+          <option value="progress-asc">Urutkan: Progres Terendah</option>
+        </select>
+      </div>
+
+      <!-- Grid Kartu Tugas (Di-render via DOM) -->
+      <div id="task-grid" class="task-grid"></div>
+    </section>
+
+    <!-- HALAMAN 2: FORM TAMBAH / EDIT TUGAS -->
+    <section id="page-form" class="page-section">
+      <div class="card form-container">
+        <h3 id="form-title">Tambah Jadwal & Pengingat Tugas Baru</h3>
+        <form id="task-form">
+          <input type="hidden" id="task-id">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="task-course">Mata Kuliah</label>
+              <input type="text" id="task-course" placeholder="Contoh: Pemrograman Web" required>
+            </div>
+            <div class="form-group">
+              <label for="task-type">Jenis Pengerjaan</label>
+              <select id="task-type" required>
+                <option value="Individu">Tugas Individu</option>
+                <option value="Kelompok">Tugas Kelompok / Tim</option>
+                <option value="Praktikum">Laporan Praktikum</option>
+                <option value="Proyek UTS/UAS">Proyek UTS / UAS</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="task-name">Judul / Deskripsi Tugas</label>
+            <input type="text" id="task-name" placeholder="Contoh: Membuat Aplikasi Web Berbasis DOM & LocalStorage" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="task-deadline">Batas Waktu (Deadline)</label>
+              <input type="datetime-local" id="task-deadline" required>
+            </div>
+            <div class="form-group">
+              <label for="task-priority">Tingkat Prioritas</label>
+              <select id="task-priority" required>
+                <option value="Tinggi">Tinggi (Mendesak)</option>
+                <option value="Sedang" selected>Sedang</option>
+                <option value="Rendah">Rendah</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="task-progress">Progres Awal (%)</label>
+              <input type="number" id="task-progress" min="0" max="100" value="0" required>
+            </div>
+            <div class="form-group">
+              <label for="task-link">Tautan Pengumpulan / Catatan</label>
+              <input type="text" id="task-link" placeholder="Contoh: https://s.id/UTSWEB2027">
+            </div>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="send-notif-now" checked>
+            <label for="send-notif-now" style="margin-bottom: 0;">Munculkan notifikasi pengingat di layar HP setelah disimpan</label>
+          </div>
+
+          <div class="btn-group">
+            <button type="submit" id="btn-submit-task" class="btn-primary">Simpan Pengingat Tugas</button>
+            <button type="button" id="btn-cancel-edit" class="btn-outline hidden">Batal Edit</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- HALAMAN 3: ARSIP & PENGELOLAAN DATABASE -->
+    <section id="page-database" class="page-section">
+      <div class="card">
+        <div class="card-header-flex">
+          <h3>Rekapitulasi & Pengelolaan Basis Data Lokal</h3>
+          <div class="btn-group">
+            <button id="btn-load-sample" class="btn-outline">Muat Data Contoh</button>
+            <button id="btn-export-db" class="btn-primary">Export DB (.json)</button>
+            <label for="input-import-db" class="btn-outline file-label">Import DB (.json)</label>
+            <input type="file" id="input-import-db" accept=".json" class="hidden">
+            <button id="btn-clear-db" class="btn-danger">Hapus Semua Data</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Mata Kuliah</th>
+                <th>Judul Tugas</th>
+                <th>Jenis</th>
+                <th>Deadline</th>
+                <th>Prioritas</th>
+                <th>Progres</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-rekap"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Wadah Toast Notifikasi -->
+  <div id="toast-container"></div>
+
+  <footer class="footer">
+    <p><strong>IngatTugas</strong> — UTS Pemrograman Web (IFRWP5151) • Teknik Informatika, Institut Teknologi Garut</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
